@@ -204,7 +204,7 @@ def fetch_and_store_all_expiries():
         if best:
             resolved_expiries.append(best)
 
-    resolved_expiries = sorted(set(resolved_expiries))
+    resolved_expiries = sorted(set(resolved_expiries),key=lambda x: datetime.strptime(x, "%d%b%y"))
 
     print(f"📅 Target expiries (calendar): {target_expiries}")
     print(f"📅 Resolved expiries (market): {resolved_expiries}")
