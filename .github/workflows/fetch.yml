@@ -49,22 +49,30 @@ jobs:
       - name: Notify Discord (success)
         if: success()
         run: |
+          UTC_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
+          KST_TIME=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
+
           curl -X POST \
             -H "Content-Type: application/json" \
-            -d '{
-              "content": "✅ **데이터 수집 성공!**\n⏰ 시간: '"$(date '+%Y-%m-%d %H:%M:%S')"'\n📂 저장소: '"${{ github.repository }}"'"
-            }' \
+            -d "{
+              \"content\": \"✅ **데이터 수집 성공!**\n⏰ UTC: ${UTC_TIME}\n⏰ KST: ${KST_TIME}\n📂 저장소: ${{ github.repository }}\"
+            }" \
             "${{ secrets.DISCORD_WEBHOOK }}"
+
 
       - name: Notify Discord (failure)
         if: failure()
         run: |
+          UTC_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
+          KST_TIME=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
+
           curl -X POST \
             -H "Content-Type: application/json" \
-            -d '{
-              "content": "🚨 **데이터 수집 실패!**\n⏰ 시간: '"$(date '+%Y-%m-%d %H:%M:%S')"'\n🔗 https://github.com/${{ github.repository }}/actions"
-            }' \
+            -d "{
+              \"content\": \"🚨 **데이터 수집 실패!**\n⏰ UTC: ${UTC_TIME}\n⏰ KST: ${KST_TIME}\n🔗 https://github.com/${{ github.repository }}/actions\"
+            }" \
             "${{ secrets.DISCORD_WEBHOOK }}"
+
 
 
 
