@@ -49,18 +49,23 @@ jobs:
       - name: Notify Discord (success)
         if: success()
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{\"content\": \"✅ **데이터 수집 성공!**\n⏰ 시간: $(date '+%Y-%m-%d %H:%M:%S')\n📂 저장소: ${{ github.repository }}\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "✅ **데이터 수집 성공!**\n⏰ 시간: '"$(date '+%Y-%m-%d %H:%M:%S')"'\n📂 저장소: '"${{ github.repository }}"'"
+            }' \
+            "${{ secrets.DISCORD_WEBHOOK }}"
 
       - name: Notify Discord (failure)
         if: failure()
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{\"content\": \"🚨 **데이터 수집 실패!** 확인이 필요합니다.\n⏰ 시간: $(date '+%Y-%m-%d %H:%M:%S')\n🔗 링크: https://github.com/${{ github.repository }}/actions\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "🚨 **데이터 수집 실패!**\n⏰ 시간: '"$(date '+%Y-%m-%d %H:%M:%S')"'\n🔗 https://github.com/${{ github.repository }}/actions"
+            }' \
+            "${{ secrets.DISCORD_WEBHOOK }}"
+
 
 
       
