@@ -2,8 +2,9 @@ import requests
 import pandas as pd
 import time
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from calendar import monthrange
+from collections import defaultdict
 
 from storage import OptionStorage
 from config.settings import BASE_ASSET
@@ -13,7 +14,7 @@ DERIBIT_API = "https://www.deribit.com/api/v2"
 
 
 # =========================================================
-# EXPIRY CALCULATION
+# EXPIRY CALCULATION (TARGET, CALENDAR-BASED)
 # =========================================================
 
 def to_deribit_expiry(dt: date) -> str:
@@ -49,7 +50,7 @@ def calculate_target_expiries(today: date | None = None) -> list[str]:
 
 
 # =========================================================
-# DERIBIT FETCH
+# DERIBIT HELPERS
 # =========================================================
 
 def get_deribit_price(asset):
@@ -63,6 +64,68 @@ def get_deribit_price(asset):
     except Exception as e:
         print(f"[ERROR] Price fetch failed ({asset}): {e}")
         return None
+
+
+def get_available_expiries_with_oi(asset):
+    """
+    실제 Deribit에 존재하는 expiry들과
+    expiry별 전체 OI 합계를 반환
+    """
+    inst = requests.get(
+        f"{DERIBIT_API}/public/get_instruments",
+        params={"currency": asset, "kind": "option"},
+        timeout=10
+    ).json().get("result", [])
+
+    expiry_oi = defaultdict(float)
+
+    for i in inst:
+        try:
+            expiry = i["instrument_name"].split("-")[1]
+
+            bs = requests.get(
+                f"{DERIBIT_API}/public/get_book_summary_by_instrument",
+                params={"instrument_name": i["instrument_name"]},
+                timeout=10
+            ).json()
+
+            if not bs.get("result"):
+                continue
+
+            oi = bs["result"][0].get("open_interest", 0)
+            expiry_oi[expiry] += oi
+
+        except Exception:
+            continue
+
+    return dict(expiry_oi)
+
+
+def select_best_expiry(target_expiry: str, expiry_oi_map: dict) -> str | None:
+    """
+    target_expiry (calendar-based) 에 가장 가까우면서
+    OI가 가장 큰 실제 expiry 선택
+    """
+    try:
+        target_dt = datetime.strptime(target_expiry, "%d%b%y").date()
+    except Exception:
+        return None
+
+    candidates = []
+
+    for expiry, oi in expiry_oi_map.items():
+        try:
+            dt = datetime.strptime(expiry, "%d%b%y").date()
+            delta_days = abs((dt - target_dt).days)
+            candidates.append((delta_days, -oi, expiry))
+        except Exception:
+            continue
+
+    if not candidates:
+        return None
+
+    candidates.sort()
+    return candidates[0][2]
 
 
 def get_deribit_options(asset, expiry, sleep_sec=0.05):
@@ -122,14 +185,29 @@ def get_deribit_options(asset, expiry, sleep_sec=0.05):
 
 
 # =========================================================
-# MAIN FETCH LOOP
+# MAIN FETCH LOOP (MARKET-AWARE)
 # =========================================================
 
 def fetch_and_store_all_expiries():
     asset = BASE_ASSET
-    expiries = calculate_target_expiries()
 
-    print(f"📅 Target expiries: {expiries}")
+    # 1️⃣ 달력 기준 목표 만기
+    target_expiries = calculate_target_expiries()
+
+    # 2️⃣ 실제 Deribit 만기 + OI
+    expiry_oi_map = get_available_expiries_with_oi(asset)
+
+    # 3️⃣ 목표 만기 → 시장 기반 보정
+    resolved_expiries = []
+    for target in target_expiries:
+        best = select_best_expiry(target, expiry_oi_map)
+        if best:
+            resolved_expiries.append(best)
+
+    resolved_expiries = sorted(set(resolved_expiries))
+
+    print(f"📅 Target expiries (calendar): {target_expiries}")
+    print(f"📅 Resolved expiries (market): {resolved_expiries}")
 
     spot_price = get_deribit_price(asset)
     if spot_price is None:
@@ -137,7 +215,7 @@ def fetch_and_store_all_expiries():
 
     storage = OptionStorage()
 
-    for expiry in expiries:
+    for expiry in resolved_expiries:
         print(f"📡 Fetching {asset} options ({expiry})")
 
         df = get_deribit_options(asset, expiry)
@@ -155,5 +233,6 @@ def fetch_and_store_all_expiries():
 
 if __name__ == "__main__":
     fetch_and_store_all_expiries()
+
 
 
