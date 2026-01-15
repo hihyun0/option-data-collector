@@ -220,7 +220,6 @@ def fetch_and_store_all_expiries():
 
     for expiry in resolved_expiries:
         print(f"📡 Fetching {asset} options ({expiry})")
-
         df = get_deribit_options(asset, expiry)
 
         if df.empty:
@@ -232,6 +231,8 @@ def fetch_and_store_all_expiries():
             asset=asset,
             spot_price=spot_price
         )
+        
+    print("🧹 Database maintenance check completed.")
 
 
 if __name__ == "__main__":
