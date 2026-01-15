@@ -73,7 +73,7 @@ jobs:
           curl -X POST \
             -H "Content-Type: application/json" \
             -d "{
-              \"content\": \"✅ **옵션 데이터 갱신 완료**\n⏰ UTC: ${UTC_TIME}\n⏰ KST: ${KST_TIME}\n📂 ${{ github.repository }}\"
+              \"content\": \"✅ **옵션 데이터 갱신 완료**\n⏰ KST: ${KST_TIME}\n⏰ UTC: ${UTC_TIME}\n📂 ${{ github.repository }}\"
             }" \
             "${{ secrets.DISCORD_WEBHOOK }}"
 
@@ -86,7 +86,7 @@ jobs:
           curl -X POST \
             -H "Content-Type: application/json" \
             -d "{
-              \"content\": \"🚨 **옵션 데이터 수집 실패**\n⏰ UTC: ${UTC_TIME}\n⏰ KST: ${KST_TIME}\n🔗 https://github.com/${{ github.repository }}/actions\"
+              \"content\": \"🚨 **옵션 데이터 수집 실패**\n⏰ KST: ${KST_TIME}\n⏰ UTC: ${UTC_TIME}\n🔗 https://github.com/${{ github.repository }}/actions\"
             }" \
             "${{ secrets.DISCORD_WEBHOOK }}"
 
