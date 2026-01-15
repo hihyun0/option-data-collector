@@ -28,8 +28,11 @@ def calculate_target_expiries(today: date | None = None) -> list[str]:
 
     expiries = {}
 
-    # 1️⃣ Near-term: today + 3 days
-    expiries["near"] = today + timedelta(days=3)
+    # 1️⃣ Near-term: this Friday
+    # weekday: 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
+    days_until_friday = (4 - today.weekday() + 7) % 7
+    target_friday = today + timedelta(days=days_until_friday)
+    expiries["near"] = target_friday
 
     # 2️⃣ Current month end
     y, m = today.year, today.month
