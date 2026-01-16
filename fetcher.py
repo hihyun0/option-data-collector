@@ -50,7 +50,7 @@ def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
     expiries["near"] = target_friday
 
     # 2️⃣ Current month end
-    y, m = today.year, today.month
+    y, m = today_date.year, today_date.month
     expiries["month_end"] = date(y, m, monthrange(y, m)[1])
 
     # 3️⃣ Next month end
