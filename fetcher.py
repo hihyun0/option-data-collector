@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import time
 
-from datetime import date, timedelta, datetime, time
+from datetime import date, timedelta, datetime, time, timezone
 from calendar import monthrange
 from collections import defaultdict
 
