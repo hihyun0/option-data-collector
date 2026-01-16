@@ -3,7 +3,7 @@ name: Option Data Fetch
 on:
   schedule:
     # GitHub Actions cron = UTC
-    - cron: "7 * * * *"
+    - cron: "8 * * * *"
     - cron: "38 * * * *"
     - cron: "41 7 * * *"    # 16:41 KST (만기 보호 스냅샷)
   workflow_dispatch:
