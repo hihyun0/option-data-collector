@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 import time
 
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
 from calendar import monthrange
 from collections import defaultdict
 
@@ -22,16 +22,31 @@ def to_deribit_expiry(dt: date) -> str:
     return dt.strftime("%d%b%y").upper()
 
 
-def calculate_target_expiries(today: date | None = None) -> list[str]:
-    if today is None:
-        today = date.today()
+def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
+    if today_dt is None:
+        today_dt = datetime.now(timezone.utc)
 
+    today_date = today_dt.date()
     expiries = {}
 
     # 1️⃣ Near-term: this Friday
     # weekday: 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
-    days_until_friday = (4 - today.weekday() + 7) % 7
-    target_friday = today + timedelta(days=days_until_friday)
+    days_until_friday = (4 - today_date.weekday() + 7) % 7
+
+    # 3. 만기일(금요일) 당일 처리 로직
+    if days_until_friday == 0:
+        # Deribit 정산 시간: UTC 08:00
+        settlement_time = time(8, 0)
+        
+        # UTC 08:00 이후라면 이미 만기 데이터가 소멸 중이므로 차주 금요일(+7일) 선택
+        if today_dt.time() >= settlement_time:
+            days_until_friday = 7
+        else:
+            # 08:00 전이라면 오늘(0일 뒤) 만기 데이터 유지
+            days_until_friday = 0
+
+    
+    target_friday = today_date + timedelta(days=days_until_friday)
     expiries["near"] = target_friday
 
     # 2️⃣ Current month end
