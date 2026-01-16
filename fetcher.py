@@ -226,13 +226,11 @@ def fetch_and_store_all_expiries():
             print(f"[WARN] No data for {expiry}")
             continue
 
-        storage.save_snapshot(
-            df=df,
-            asset=asset,
-            spot_price=spot_price
-        )
+        storage.save_snapshot(df=df, asset=asset, spot_price=spot_price)
         
-    print("🧹 Database maintenance check completed.")
+    print("🧹 Running final database maintenance...")
+    storage.maintain_db() 
+    print("✅ All tasks completed.")
 
 
 if __name__ == "__main__":
