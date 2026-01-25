@@ -7,7 +7,7 @@ from calendar import monthrange
 from collections import defaultdict
 
 from storage import OptionStorage
-from config.settings import BASE_ASSET
+from config.settings import ASSETS
 
 
 DERIBIT_API = "https://www.deribit.com/api/v2"
@@ -207,45 +207,47 @@ def get_deribit_options(asset, expiry, sleep_sec=0.05):
 # =========================================================
 
 def fetch_and_store_all_expiries():
-    asset = BASE_ASSET
-
-    # 1️⃣ 달력 기준 목표 만기
-    target_expiries = calculate_target_expiries()
-
-    # 2️⃣ 실제 Deribit 만기 + OI
-    expiry_oi_map = get_available_expiries_with_oi(asset)
-
-    # 3️⃣ 목표 만기 → 시장 기반 보정
-    resolved_expiries = []
-    for target in target_expiries:
-        best = select_best_expiry(target, expiry_oi_map)
-        if best:
-            resolved_expiries.append(best)
-
-    resolved_expiries = sorted(set(resolved_expiries),key=lambda x: datetime.strptime(x, "%d%b%y"))
-
-    print(f"📅 Target expiries (calendar): {target_expiries}")
-    print(f"📅 Resolved expiries (market): {resolved_expiries}")
-
-    spot_price = get_deribit_price(asset)
-    if spot_price is None:
-        return
-
     storage = OptionStorage()
+    
+    # 0️⃣ 자산 리스트(BTC, ETH)를 순회하도록 반복문 추가
+    for asset in ASSETS:
+        print(f"--- 🚀 Starting Fetch for {asset} ---")
+        
+        # 1️⃣ 해당 자산에 맞는 목표 만기 계산
+        target_expiries = calculate_target_expiries()
 
-    for expiry in resolved_expiries:
-        print(f"📡 Fetching {asset} options ({expiry})")
-        df = get_deribit_options(asset, expiry)
+        # 2️⃣ 해당 자산의 실제 Deribit 만기 + OI 정보 가져오기
+        expiry_oi_map = get_available_expiries_with_oi(asset)
 
-        if df.empty:
-            print(f"[WARN] No data for {expiry}")
+        # 3️⃣ 만기 매칭 로직 (기존과 동일하되 asset 변수 활용)
+        resolved_expiries = []
+        for target in target_expiries:
+            best = select_best_expiry(target, expiry_oi_map)
+            if best:
+                resolved_expiries.append(best)
+
+        resolved_expiries = sorted(set(resolved_expiries), key=lambda x: datetime.strptime(x, "%d%b%y"))
+
+        # 4️⃣ 해당 자산의 현재가 가져오기
+        spot_price = get_deribit_price(asset)
+        if spot_price is None:
+            print(f"[ERROR] Could not get spot price for {asset}")
             continue
 
-        storage.save_snapshot(df=df, asset=asset, spot_price=spot_price)
-        
-    print("🧹 Running final database maintenance...")
-    storage.maintain_db() 
-    print("✅ All tasks completed.")
+        # 5️⃣ 만기별 데이터 수집 및 저장
+        for expiry in resolved_expiries:
+            print(f"📡 Fetching {asset} options ({expiry})")
+            df = get_deribit_options(asset, expiry)
+
+            if df.empty:
+                print(f"[WARN] No data for {asset} - {expiry}")
+                continue
+
+            # storage.py의 save_snapshot은 이미 asset 인자를 받으므로 그대로 사용
+            storage.save_snapshot(df=df, asset=asset, spot_price=spot_price)
+            
+            # API 과부하 방지를 위한 짧은 휴식
+            time.sleep(0.5)
 
 
 if __name__ == "__main__":
