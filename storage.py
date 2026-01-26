@@ -132,7 +132,7 @@ class OptionStorage:
             "IV": "iv",
         })
 
-        cols = ["timestamp", "asset", "spot_price", "expiry", "expiry_iso", "instrument", "strike", "type", "oi", "delta", "gamma", "theta", "vega"]
+        cols = ["timestamp", "asset", "spot_price", "expiry", "expiry_iso", "instrument", "strike", "type", "oi", "delta", "gamma", "theta", "vega", "iv"]
 
         with sqlite3.connect(self.live_path) as conn:
             df[cols].to_sql("oi_snapshots", conn, if_exists="append", index=False)
