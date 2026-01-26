@@ -34,6 +34,7 @@ class OptionStorage:
                     gamma REAL NOT NULL,
                     theta REAL NOT NULL,  
                     vega REAL NOT NULL,  
+                    iv REAL NOT NULL,
                     UNIQUE(timestamp, instrument)
                 );
             """)
@@ -59,7 +60,8 @@ class OptionStorage:
                     delta REAL,
                     gamma REAL,
                     theta REAL,  
-                    vega REAL
+                    vega REAL,
+                    iv REAL
                 );
             """)
             conn.commit()
@@ -127,6 +129,7 @@ class OptionStorage:
             "Gamma": "gamma",
             "Theta": "theta",
             "Vega": "vega",
+            "IV": "mark_iv",
         })
 
         cols = ["timestamp", "asset", "spot_price", "expiry", "expiry_iso", "instrument", "strike", "type", "oi", "delta", "gamma", "theta", "vega"]
