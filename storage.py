@@ -129,7 +129,7 @@ class OptionStorage:
             "Gamma": "gamma",
             "Theta": "theta",
             "Vega": "vega",
-            "IV": "mark_iv",
+            "IV": "iv",
         })
 
         cols = ["timestamp", "asset", "spot_price", "expiry", "expiry_iso", "instrument", "strike", "type", "oi", "delta", "gamma", "theta", "vega"]
