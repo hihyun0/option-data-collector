@@ -67,9 +67,8 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          # 이미 위에서 git add를 했으므로 바로 커밋
           git commit -m "auto: update option data with greeks"
-          git pushh
+          git push
 
       - name: Notify Discord (success)
         if: success() && steps.git_status.outputs.changed == 'true'
