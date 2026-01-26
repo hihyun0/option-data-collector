@@ -32,8 +32,8 @@ class OptionStorage:
                     oi REAL NOT NULL,
                     delta REAL NOT NULL,
                     gamma REAL NOT NULL,
-                    theta REAL DEFAULT 0,  
-                    vega REAL DEFAULT 0,  
+                    theta REAL NOT NULL,  
+                    vega REAL NOT NULL,  
                     UNIQUE(timestamp, instrument)
                 );
             """)
@@ -58,8 +58,8 @@ class OptionStorage:
                     oi REAL,
                     delta REAL,
                     gamma REAL,
-                    theta REAL DEFAULT 0,  
-                    vega REAL DEFAULT 0
+                    theta REAL,  
+                    vega REAL
                 );
             """)
             conn.commit()
