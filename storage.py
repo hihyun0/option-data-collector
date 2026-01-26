@@ -32,6 +32,8 @@ class OptionStorage:
                     oi REAL NOT NULL,
                     delta REAL NOT NULL,
                     gamma REAL NOT NULL,
+                    theta REAL DEFAULT 0,  
+                    vega REAL DEFAULT 0,  
                     UNIQUE(timestamp, instrument)
                 );
             """)
@@ -55,7 +57,9 @@ class OptionStorage:
                     type TEXT,
                     oi REAL,
                     delta REAL,
-                    gamma REAL
+                    gamma REAL,
+                    theta REAL DEFAULT 0,  
+                    vega REAL DEFAULT 0
                 );
             """)
             conn.commit()
