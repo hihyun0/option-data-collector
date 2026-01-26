@@ -38,31 +38,41 @@ jobs:
       - name: Run fetcher
         run: python fetcher.py
 
-      # 변경 사항 없으면 이후 단계 스킵
       - name: Check for changes
         id: git_status
         run: |
-          if git diff --quiet database/; then
+          # database 폴더가 없으면 생성 (방어적 코드)
+          mkdir -p database
+          
+          # git add를 먼저 해서 untracked 파일을 staging 영역으로 올림
+          git add database/
+          
+          # staging 영역에 변경 사항이 있는지 확인
+          if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
+            print("No changes detected in database.")
           else
             echo "changed=true" >> $GITHUB_OUTPUT
+            print("Changes detected in database.")
           fi
 
       - name: Upload live.db artifact
+        # 위 단계에서 changed=true일 때만 실행
         if: steps.git_status.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: live-db
-          path: database/live.db
+          path: database/
+          retention-days: 5
 
       - name: Commit & push data
         if: steps.git_status.outputs.changed == 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add database/
-          git commit -m "auto: update option data"
-          git push
+          # 이미 위에서 git add를 했으므로 바로 커밋
+          git commit -m "auto: update option data with greeks"
+          git pushh
 
       - name: Notify Discord (success)
         if: success() && steps.git_status.outputs.changed == 'true'
