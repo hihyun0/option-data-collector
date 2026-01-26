@@ -194,7 +194,7 @@ def get_deribit_options(asset, expiry, sleep_sec=0.01):
                 "Gamma": greeks.get("gamma", 0.0),
                 "Theta": greeks.get("theta", 0.0),
                 "Vega": greeks.get("vega", 0.0),
-                "iv": tk.get("mark_iv", 0)
+                "IV": tk.get("mark_iv", 0)
             })
 
             if sleep_sec > 0:
