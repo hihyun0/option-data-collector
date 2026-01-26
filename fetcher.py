@@ -146,7 +146,7 @@ def select_best_expiry(target_expiry: str, expiry_oi_map: dict) -> str | None:
     return candidates[0][2]
 
 
-def get_deribit_options(asset, expiry, sleep_sec=0.05):
+def get_deribit_options(asset, expiry, sleep_sec=0.01):
     inst_resp = requests.get(
         f"{DERIBIT_API}/public/get_instruments",
         params={"currency": asset, "kind": "option"},
@@ -192,9 +192,12 @@ def get_deribit_options(asset, expiry, sleep_sec=0.05):
                 "OI": oi,
                 "Delta": greeks.get("delta", 0.0),
                 "Gamma": greeks.get("gamma", 0.0),
+                "Theta": greeks.get("theta", 0.0),
+                "Vega": greeks.get("vega", 0.0),
             })
 
-            time.sleep(sleep_sec)
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
 
         except Exception as e:
             print(f"[WARN] Skip {name}: {e}")
