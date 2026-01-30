@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 import time
-from datetime import date, timedelta, datetime, timezone, time
+from datetime import date, timedelta, datetime, timezone, time as dtime
 from calendar import monthrange
 from collections import defaultdict
 
@@ -35,7 +35,7 @@ def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
     # 3. 만기일(금요일) 당일 처리 로직
     if days_until_friday == 0:
         # Deribit 정산 시간: UTC 08:00
-        settlement_time = datetime.combine(today_date, datetime.min.time()).replace(hour=8).time()
+        dtime(8, 0)
         
         # UTC 08:00 이후라면 이미 만기 데이터가 소멸 중이므로 차주 금요일(+7일) 선택
         if today_dt.time() >= settlement_time:
