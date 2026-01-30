@@ -104,7 +104,10 @@ class OptionStorage:
 
         # [수정] VACUUM은 트랜잭션 외부에서 실행해야 함
         with sqlite3.connect(self.archive_path) as conn_arch:
-            conn_arch.execute("VACUUM")
+            conn = sqlite3.connect(self.live_path)
+            conn.isolation_level = None # 자동 커밋 모드
+            conn.execute("VACUUM")
+            conn.close()
                 
     # -----------------------------
     # SAVE
