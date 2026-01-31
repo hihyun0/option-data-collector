@@ -102,10 +102,10 @@ class OptionStorage:
             if cursor.rowcount > 0:
                 print(f"🗑️ Deleted {cursor.rowcount} old rows from archive.db")
 
-        # [수정] VACUUM은 트랜잭션 외부에서 실행해야 함
-        with sqlite3.connect(self.archive_path) as conn_arch:
-            conn = sqlite3.connect(self.live_path)
-            conn.isolation_level = None # 자동 커밋 모드
+        # [수정] 모든 작업 완료 후 연결을 새로 하여 VACUUM 실행
+        for path in [self.live_path, self.archive_path]:
+            conn = sqlite3.connect(path)
+            conn.isolation_level = None  # 자동 커밋 모드로 설정해야 VACUUM 가능
             conn.execute("VACUUM")
             conn.close()
                 
