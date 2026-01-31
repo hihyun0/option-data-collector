@@ -141,7 +141,7 @@ class OptionStorage:
             df[cols].to_sql("oi_snapshots", conn, if_exists="append", index=False)
 
         print(f"📦 Saved {len(df)} rows @ {ts}")
-        self.maintain_db()
+        # self.maintain_db()
 
     # -----------------------------
     # LOAD
