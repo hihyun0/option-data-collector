@@ -252,6 +252,9 @@ def fetch_and_store_all_expiries():
             # API 과부하 방지를 위한 짧은 휴식
             time.sleep(0.5)
 
+        print("🧹 Running database maintenance (Archiving expired data)...")
+        storage.maintain_db()
+
 
 if __name__ == "__main__":
     fetch_and_store_all_expiries()
