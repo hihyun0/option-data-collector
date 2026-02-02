@@ -70,12 +70,8 @@ class OptionStorage:
     # MAINTENANCE (ARCHIVE & CLEANUP)
     # -----------------------------
     def maintain_db(self, delete_after_days=30):
-        """
-        데이터 유지보수 로직:
-        1. Live -> Archive 이동
-        2. Old Archive Data 삭제
-        """
-        today_str = datetime.utcnow().date().isoformat()
+        # 기준 시각 일치
+        today_str = datetime.now(timezone.utc).date().isoformat()
         
         # 1. Live -> Archive 이동
         with sqlite3.connect(self.live_path) as conn_live:
@@ -91,23 +87,22 @@ class OptionStorage:
                 conn_live.execute("DELETE FROM oi_snapshots WHERE expiry_iso < ?", [today_str])
                 print(f"📦 Archived {len(expired_df)} expired rows to archive.db")
 
-        # [수정] VACUUM은 트랜잭션 외부에서 실행해야 함
-        with sqlite3.connect(self.live_path) as conn_live:
-            conn_live.execute("VACUUM")
-
         # 2. Old Archive Data 삭제
-        limit_date = (datetime.utcnow() - timedelta(days=delete_after_days)).isoformat()
+        limit_date = (datetime.now(timezone.utc) - timedelta(days=delete_after_days)).isoformat()
         with sqlite3.connect(self.archive_path) as conn_arch:
             cursor = conn_arch.execute("DELETE FROM oi_snapshots_archive WHERE timestamp < ?", [limit_date])
             if cursor.rowcount > 0:
                 print(f"🗑️ Deleted {cursor.rowcount} old rows from archive.db")
 
-        # [수정] 모든 작업 완료 후 연결을 새로 하여 VACUUM 실행
+        # 3. 🚀 VACUUM 처리 (트랜잭션 외부 호출)
         for path in [self.live_path, self.archive_path]:
-            conn = sqlite3.connect(path)
-            conn.isolation_level = None  # 자동 커밋 모드로 설정해야 VACUUM 가능
-            conn.execute("VACUUM")
-            conn.close()
+            try:
+                conn = sqlite3.connect(path)
+                conn.isolation_level = None  # 자동 커밋 모드
+                conn.execute("VACUUM")
+                conn.close()
+            except Exception as e:
+                print(f"[WARN] Vacuum failed for {path}: {e}")
                 
     # -----------------------------
     # SAVE
