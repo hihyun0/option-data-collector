@@ -211,6 +211,8 @@ def get_deribit_options(asset, expiry, sleep_sec=0.01):
 
 def fetch_and_store_all_expiries():
     storage = OptionStorage()
+    print("🧹 Running database maintenance (Archiving expired data)...")
+    storage.maintain_db()
     
     # 0️⃣ 자산 리스트(BTC, ETH)를 순회하도록 반복문 추가
     for asset in ASSETS:
@@ -251,9 +253,6 @@ def fetch_and_store_all_expiries():
             
             # API 과부하 방지를 위한 짧은 휴식
             time.sleep(0.5)
-
-        print("🧹 Running database maintenance (Archiving expired data)...")
-        storage.maintain_db()
 
 
 if __name__ == "__main__":
