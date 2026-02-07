@@ -29,16 +29,16 @@ def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
     expiries = {}
 
     days_until_friday = (4 - today_date.weekday() + 7) % 7
+    settlement_time = dtime(8, 0)
 
-    if days_until_friday == 0:
-        settlement_time = dtime(8, 0)
-        if today_dt.time() >= settlement_time:
-            days_until_friday = 7
-        else:
-            days_until_friday = 0
+    if days_until_friday == 0 and today_dt.time() >= settlement_time:
+        days_until_friday = 7
 
-    target_friday = today_date + timedelta(days=days_until_friday)
-    expiries["near"] = target_friday
+    this_friday = today_date + timedelta(days=days_until_friday)
+    expiries["near"] = this_friday
+
+    next_friday = this_friday + timedelta(days=7)
+    expiries["next_week"] = next_friday
 
     y, m = today_date.year, today_date.month
     expiries["month_end"] = date(y, m, monthrange(y, m)[1])
@@ -52,7 +52,7 @@ def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
     q_end_month = ((m - 1) // 3 + 1) * 3
     expiries["quarter_end"] = date(y, q_end_month, monthrange(y, q_end_month)[1])
 
-    return [to_deribit_expiry(d) for d in expiries.values()]
+    return [to_deribit_expiry(d) for d in sorted(set(expiries.values()))]
 
 
 # =========================================================
