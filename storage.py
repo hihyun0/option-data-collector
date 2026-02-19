@@ -69,38 +69,44 @@ class OptionStorage:
     # -----------------------------
     # MAINTENANCE (ARCHIVE & CLEANUP)
     # -----------------------------
-    def maintain_db(self, delete_after_days=30):
-        # 기준 시각 일치
-        today_str = datetime.now(timezone.utc).date().isoformat()
-        
-        # 1. Live -> Archive 이동
-        with sqlite3.connect(self.live_path) as conn_live:
-            expired_df = pd.read_sql(
-                "SELECT * FROM oi_snapshots WHERE expiry_iso < ?", 
-                conn_live, params=[today_str]
-            )
-            
-            if not expired_df.empty:
-                with sqlite3.connect(self.archive_path) as conn_arch:
-                    expired_df.to_sql("oi_snapshots_archive", conn_arch, if_exists="append", index=False)
-                
-                conn_live.execute("DELETE FROM oi_snapshots WHERE expiry_iso < ?", [today_str])
-                print(f"📦 Archived {len(expired_df)} expired rows to archive.db")
+    def maintain_db(self, live_days=7, archive_retain_days=30):
+        """
+        Theta 분석을 위해 최근 7일치 데이터는 live.db에 유지.
+        만기가 지났거나 7일이 넘은 데이터는 archive.db로 이동 후 삭제.
+        """
+        today_dt = datetime.now(timezone.utc)
+        today_str = today_dt.date().isoformat()
+        # 7일 전 기준 시각 (Theta 분석을 위한 데이터 보존 기간)
+        cutoff_ts = (today_dt - timedelta(days=live_days)).isoformat()
 
-        # 2. Old Archive Data 삭제
-        limit_date = (datetime.now(timezone.utc) - timedelta(days=delete_after_days)).isoformat()
+        # 1. Live -> Archive 이동 및 삭제
+        with sqlite3.connect(self.live_path) as conn_live:
+            # 만기가 지났거나 수집한 지 7일이 넘은 데이터 선택
+            query = "SELECT * FROM oi_snapshots WHERE expiry_iso < ? OR timestamp < ?"
+            to_move_df = pd.read_sql(query, conn_live, params=[today_str, cutoff_ts])
+            
+            if not to_move_df.empty:
+                with sqlite3.connect(self.archive_path) as conn_arch:
+                    to_move_df.to_sql("oi_snapshots_archive", conn_arch, if_exists="append", index=False)
+                
+                conn_live.execute("DELETE FROM oi_snapshots WHERE expiry_iso < ? OR timestamp < ?", [today_str, cutoff_ts])
+                print(f"📦 Archived and deleted {len(to_move_df)} rows from live.db")
+
+        # 2. Old Archive Data 삭제 (영구 삭제)
+        archive_limit = (today_dt - timedelta(days=archive_retain_days)).isoformat()
         with sqlite3.connect(self.archive_path) as conn_arch:
-            cursor = conn_arch.execute("DELETE FROM oi_snapshots_archive WHERE timestamp < ?", [limit_date])
+            cursor = conn_arch.execute("DELETE FROM oi_snapshots_archive WHERE timestamp < ?", [archive_limit])
             if cursor.rowcount > 0:
                 print(f"🗑️ Deleted {cursor.rowcount} old rows from archive.db")
 
-        # 3. 🚀 VACUUM 처리 (트랜잭션 외부 호출)
+        # 3. 🚀 VACUUM 처리 (물리적 파일 크기 축소 핵심)
         for path in [self.live_path, self.archive_path]:
             try:
                 conn = sqlite3.connect(path)
-                conn.isolation_level = None  # 자동 커밋 모드
+                conn.isolation_level = None  
                 conn.execute("VACUUM")
                 conn.close()
+                print(f"🧹 Vacuumed: {path.name}")
             except Exception as e:
                 print(f"[WARN] Vacuum failed for {path}: {e}")
                 
