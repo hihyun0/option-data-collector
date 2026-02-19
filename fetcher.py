@@ -17,7 +17,6 @@ DERIBIT_API = "https://www.deribit.com/api/v2"
 # =========================================================
 
 def to_deribit_expiry(dt: date) -> str:
-    """Convert date -> DDMMMYY (Deribit format)"""
     return dt.strftime("%d%b%y").upper()
 
 
@@ -28,6 +27,7 @@ def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
     today_date = today_dt.date()
     expiries = {}
 
+    # --- 이번 주 및 다음 주 금요일 계산 (Theta 및 연속성 분석용) ---
     days_until_friday = (4 - today_date.weekday() + 7) % 7
     settlement_time = dtime(8, 0)
 
@@ -36,9 +36,9 @@ def calculate_target_expiries(today_dt: date | None = None) -> list[str]:
 
     this_friday = today_date + timedelta(days=days_until_friday)
     expiries["near"] = this_friday
-
-    next_friday = this_friday + timedelta(days=7)
-    expiries["next_week"] = next_friday
+    
+    # 🚀 추가: 다음 주 금요일 (연속성 확보)
+    expiries["next_week"] = this_friday + timedelta(days=7)
 
     y, m = today_date.year, today_date.month
     expiries["month_end"] = date(y, m, monthrange(y, m)[1])
@@ -179,9 +179,9 @@ def get_deribit_options(asset, expiry, sleep_sec=0.01):
 def fetch_and_store_all_expiries():
     storage = OptionStorage()
     
-    # 🚀 1. 수집 시작 전 DB부터 청소 (순서 변경)
+    # 수집 전 DB 유지보수 실행
     print("🧹 Running pre-fetch database maintenance...")
-    storage.maintain_db()
+    storage.maintain_db(live_days=7) # 최근 7일치 유지
 
     for asset in ASSETS:
         print(f"--- 🚀 Starting Fetch for {asset} ---")
@@ -195,7 +195,6 @@ def fetch_and_store_all_expiries():
             if best:
                 resolved_expiries.append(best)
 
-        # 🚀 2. 만기 지난 날짜 리스트에서 한 번 더 필터링 (견고함 추가)
         today_str = datetime.now(timezone.utc).date().isoformat()
         resolved_expiries = sorted(
             {e for e in resolved_expiries if datetime.strptime(e, "%d%b%y").date().isoformat() >= today_str},
