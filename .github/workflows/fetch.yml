@@ -72,18 +72,18 @@ jobs:
           git commit -m "auto: update option data with greeks"
           git push
 
-      - name: Notify Discord (success)
-        if: success() && steps.git_status.outputs.changed == 'true'
-        run: |
-          UTC_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
-          KST_TIME=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
+      # - name: Notify Discord (success)
+        # if: success() && steps.git_status.outputs.changed == 'true'
+        # run: |
+          # UTC_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
+          # KST_TIME=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
 
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"content\": \"✅ **옵션 데이터 갱신 완료**\n⏰ KST: ${KST_TIME}\n⏰ UTC: ${UTC_TIME}\n📂 ${{ github.repository }}\"
-            }" \
-            "${{ secrets.DISCORD_WEBHOOK }}"
+          #curl -X POST \
+            #-H "Content-Type: application/json" \
+            #-d "{
+            #  \"content\": \"✅ **옵션 데이터 갱신 완료**\n⏰ KST: ${KST_TIME}\n⏰ UTC: ${UTC_TIME}\n📂 ${{ github.repository }}\"
+            #}" \
+            #"${{ secrets.DISCORD_WEBHOOK }}"
 
       - name: Notify Discord (failure)
         if: failure()
